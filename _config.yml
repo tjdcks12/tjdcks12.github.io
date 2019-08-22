@@ -65,8 +65,8 @@ collections:
     output: true
     description: #Deep Think Posts
     feature_text: |
-      # 코헨의 개발일기장
-      코헨의 Deep러닝(깊이있는 개발공부)
+      # 코헨's Blog
+      be a 'Deep'veloper
 
     feature_image: "/assets/banners/banner1.png"
 
@@ -80,14 +80,14 @@ defaults:
 # 7. Site settings
 encoding: utf-8 # Make sure the encoding is right
 lang: ko-KR # Set the site language
-title: "코헨의 개발일지" # Site name or title, also used in jekyll-seo-tag
+title: "코헨의 개발일기장" # Site name or title, also used in jekyll-seo-tag
 logo: "/assets/logos/logo.svg" # Site logo, also used in jekyll-seo-tag
-description: "코헨의 Deep러닝(깊이있는 포스팅 지향!)" # Site description and default description, also used in jekyll-seo-tag
+description: "be a 'Deep'veloper" # Site description and default description, also used in jekyll-seo-tag
 url: "https://tjdcks12.github.io" # Site url, also used in jekyll-seo-tag
 baseurl: ""
 repo: "https://github.com/tjdcks12"
 email: "tjdcks1781@gmail.com"
-# disqus: "alembic-1" # Blog post comments, uncomment the option and set the site ID from your Disqus account
+disqus: "alembic-1" # Blog post comments, uncomment the option and set the site ID from your Disqus account
 # google_analytics: ''
 # google_analytics_anonymize_ip: ''
 # service_worker: false # Will turn off the service worker if set to false
@@ -115,11 +115,11 @@ navigation_footer:
   Created by Kohen kang: https://tjdcks12.github.io
 
 social_links: # Appears in sidebar. Set the urls then uncomment and comment out as desired
-  GitHub: https://github.com/daviddarnes
+  GitHub: https://github.com/tjdcks12
 
 sharing_links: # Appear at the bottom of single blog posts, add as desired. The value can be 'true' or the desired button colour
   # Twitter: "#0d94e7"
-  # facebook: "#3B5998"
+  facebook: "#3B5998"
   Email: true
 
 theme: alembic-jekyll-theme
