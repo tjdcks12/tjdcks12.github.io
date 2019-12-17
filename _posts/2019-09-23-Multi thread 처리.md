@@ -224,6 +224,64 @@ ExecutorService를 통해 변경된 메소드의 모습은 다음과 같습니�
 
 ## 스레드 사용 OOM(OutOfMemory) 이슈
 
+서비스에 스레드풀을 적용하고 동작시키던 과정에 OutOfMemoryError: unable to create new native thread 와같은 에러를 호출하면서 서버가 뻗어버리는 이슈가 발생했다. 해당 이슈는 아주 치명적이었는데, 어플리케이션이 죽는게 아니라)서버 메모리 상에서 프로세스를 더이상 할당할수 없는 문제였기때문에) 서버가 응답이 되지 않는것이었기때문에, ec2 접속을 시도하더라도 Broken pipe 에러를 뱉어내면서 ssh 접속이 불가능했다. 이런상태에서 어플리케이션의 헬스체크는 정상적으로 가능하다는 점에서 로드밸런서가 서비스 운영 장애를 인식하지 못하고 있었다.
+
+ 결국 강제로 ec2인스턴스를 stop하여 어플리케이션을 강제로 종료한 후 다시 서버를 start 시킨 후에야 정상적으로 돌아왔는데, 실제 개발환경에서는 예측할 수 없었던 에러였다. 이러한 부분들을 해결하기 위해서 jvm의 여러 옵션들을 공부하고, 로깅하는 전략들을 배웠는데, 결론적으로 문제 원인은 개발 코드에 있었다.
+
+
+
+IntelliJ의 [VisualVM플러그인을 활용](https://ryudung.tistory.com/26)하면 JVM의 스레드 할당량이나, 힙 상태등을 로컬 개발 환경에서 손쉽게 모니터링 가능한데, 이 도구를 이용해서 막차 서비스를 동작시켜본 결과, 요청을 생성할때마다 스레드가 계속해서 늘어나는 버그를 발견 할 수 있었다.
+
+결국 문제의 원인은 스레드를 계속해서 생성하고, 복구시키지 않는다는 점이었는데, 디버깅 결과 아주 충격적인 코드를 발견할 수 있었다.
+
+
+
+```java
+public List<RouteDTO> makeRoute(List<Path> tmpPath, int serviceDay, String pathType) {
+	...
+
+	final ExecutorService executor = Executors.newFixedThreadPool(20);
+	final List<Future<RouteDTO>> futures = new ArrayList<Future<RouteDTO>>();
+
+	for (Path path : pathList) {
+   	  Callable<RouteDTO> callable = new Callable<RouteDTO>() {
+    	      @Override
+    	      public RouteDTO call() throws Exception {
+    	      return asyncPathFindService.getPathInfo(path, pathType, serviceDay);
+
+    	 };
+    	 if(callable == null) continue;
+    	 futures.add(executor.submit(callable));  // 막차시간 set
+	}
+}
+```
+
+
+
+위 코드의 세번째줄을 보면 새로운 스레드 풀을 선언하는 코드가 보이는데, 저런 코드를 수행한 결과 VisualVM을 통해 발견한 그래프의 모습은 다음과 같다
+
+![image-20190927140221770](/Users/sungchan/Desktop/GITBLOG/tjdcks12.github.io/_posts/image-20190927140221770.png)
+
+
+
+<sub>요청 개수에 따라 고정 스레드 개수가 끊임없이 증가하고있다</sub>
+
+
+
+이러한 버그 발견 이후, 스레드 풀 선언하는 부분을 메소드 바깥의 빈쪽에 생성하도록 변경하였고, 그 이후 돌려본 결과는 다음과 같다
+
+![image-20190927140205470](/Users/sungchan/Desktop/GITBLOG/tjdcks12.github.io/_posts/image-20190927140205470.png)
+
+요청 개수와 상관없이 항상 꾸준한 스레드 개수를 유지하고 있다.
+
+
+
+이렇게 VisualVM을 활용하면 코드 내부에서 쉽게 발견할수 없는 부분에 대해서 디버깅이 가능하다!!
+
+적극 활용하도록하자~
+
+
+
 
 
 [GC 동작과정](https://d2.naver.com/helloworld/1329)
@@ -237,5 +295,6 @@ ExecutorService를 통해 변경된 메소드의 모습은 다음과 같습니�
 
 [Jstat을 통한 JVM heap memory 모니터링](https://dumdildor.tistory.com/10)
 
+[jvm 동작과정 Java8 Before, After](http://blog.naver.com/PostView.nhn?blogId=hanajava&logNo=221360410433&categoryNo=40&parentCategoryNo=40&viewDate=&currentPage=1&postListTopCurrentPage=&from=postList)
 
 
